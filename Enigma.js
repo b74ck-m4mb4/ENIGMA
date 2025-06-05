@@ -16,6 +16,9 @@ function runEnigmaSimulation(gw) {
      rotors: []
  };
 
+const ROTOR_TURNOVERS = ['B'.charCodeAt(0) - 65, 'C'.charCodeAt(0) - 65, 'D'.charCodeAt(0) - 65];
+
+
 // Lamps
 for(var i=0; i<26; i++){
   var dh =  String.fromCharCode("A".charCodeAt(0)+i);
@@ -63,14 +66,28 @@ for(var i=0; i < 26; i++){
 
  key.mousedownAction = function () {
    this.label.setColor("red");
+   stepRotor(enigma.rotors[2]);
+   if(enigma.rotors[2].offset === ROTOR_TURNOVERS[2] || enigma.rotors[1].offset === ROTOR_TURNOVERS[1]){
+      stepRotor(enigma.rotors[1]);}
+   if(enigma.rotors[1].offset === ROTOR_TURNOVERS[1]){
+      stepRotor(enigma.rotors[0]);
+      }
    if (this.label !== undefined && this.label.linkedLamp !== undefined && this.label.linkedLamp !== null) {
     var char = this.label.getLabel();
     var index = char.charCodeAt(0) - 65;
 
-    for (var r = 0; r < 3; r++) {
+    for (var r = 2; r >= 0; r--) {
       var rotor = enigma.rotors[r];
       index = applyPermutation(index, rotor.permutation, rotor.offset);
     }
+
+	 index = reflector(index);
+
+	 for (var r = 0; r < 3; r++) {
+      var rotor = enigma.rotors[r];
+      index = applyInversePermutation(index, rotor.permutation, rotor.offset);
+    }
+
     var mappedLetter = String.fromCharCode(index + 65);
 
     if (enigma.lamps[mappedLetter] !== undefined && enigma.lamps[mappedLetter] !== null) {
@@ -80,16 +97,6 @@ for(var i=0; i < 26; i++){
   }
 };
 
-//key.mouseupAction = function () {
-//  this.label.setColor("#CCCCCC");
-//  if (this.label !== undefined && this.label.litLamp !== undefined) {
-//    var litLamp = this.label.litLamp;
-//    if (enigma.lamps[litLamp] !== undefined && enigma.lamps[litLamp] !== null) {
-  //    enigma.lamps[litLamp].setColor(LAMP_OFF_COLOR);
-    //}
-   // this.label.litLamp = null;
-  //}
-//};
 
 key.mouseupAction = function () {
   this.label.setColor("#CCCCCC");
@@ -172,4 +179,21 @@ function applyPermutation(index, permutation, offset){
   var index2 = letter.charCodeAt(0) - 65; 
   var index3 = (index2 - offset + 26) % 26;
   return index3;
+}
+function applyInversePermutation(index, permutation, offset) {
+  var index1 = (index + offset) % 26;
+  var letter = String.fromCharCode(index1 + 65);
+  var index2 = permutation.indexOf(letter);
+  var index3 = (index2 - offset + 26) % 26;
+  return index3;
+}
+
+function reflector(index){
+	var letter = REFLECTOR_PERMUTATION.charAt(index);
+	return letter.charCodeAt(0)-65;
+}
+function stepRotor(rotor){
+  rotor.offset = (rotor.offset + 1) % 26;
+  var newChar = String.fromCharCode(rotor.offset + 65);
+  rotor.label.setLabel(newChar);
 }
